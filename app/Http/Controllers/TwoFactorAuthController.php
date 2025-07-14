@@ -19,8 +19,15 @@ class TwoFactorAuthController extends Controller
         return view('2fa.register');
     }
 
-    public function dashboardShow()
+    public function dashboardShow(Request $request)
     {
+        $user = Auth::user();
+
+        // Jika user punya 2FA dan belum verifikasi, arahkan ke halaman OTP
+        if ($user && $user->google2fa_secret && !$request->session()->get('2fa_verified')) {
+            return redirect()->route('verify')->withErrors(['message' => 'Silakan verifikasi 2FA terlebih dahulu.']);
+        }
+
         return view('menu');
     }
 
@@ -32,6 +39,23 @@ class TwoFactorAuthController extends Controller
     public function showVerify()
     {
         return view('2fa.verify');
+    }
+
+    public function resendOtp(Request $request)
+    {
+        $user = Auth::user();
+
+        if (!$user || !$user->google2fa_secret) {
+            return redirect()->route('login')->withErrors(['message' => 'Akses tidak valid.']);
+        }
+
+        $google2fa = app('pragmarx.google2fa');
+        $otp = $google2fa->getCurrentOtp($user->google2fa_secret);
+
+        // Kirim ulang email OTP
+        Mail::to($user->email)->send(new OTPMail($otp));
+
+        return back()->with('status', 'Kode OTP berhasil dikirim ulang.');
     }
 
     public function register(Request $request)
@@ -79,10 +103,8 @@ class TwoFactorAuthController extends Controller
                     $google2fa = app('pragmarx.google2fa');
                     $otp = $google2fa->getCurrentOtp($user->google2fa_secret);
 
-
                     // Kirim OTP ke email pengguna
-                    Mail::to($user->email)->send(new OTPMail($otp));
-
+                    $mail = Mail::to($user->email)->send(new OTPMail($otp));
 
                     // Arahkan ke halaman verifikasi OTP
                     return redirect()->route('verify');  // Pastikan route verify ada

@@ -35,7 +35,11 @@
                     <input type="text" class="form-control" name="code" id="code" required>
                 </div>
 
-                <button type="submit" class="btn btn-success w-100">Verify</button>
+                <button type="submit" class="btn btn-success w-100 mb-2">Verify</button>
+            </form>
+
+            <form method="GET" action="{{ route('verify.resend') }}">
+                <button type="submit" class="btn btn-outline-info w-100">Kirim Ulang Kode</button>
             </form>
 
         </div>
